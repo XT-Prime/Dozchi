@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<!--
+  انتشار روی GitHub Pages:
+  ۱) یک مخزن (repository) جدید بسازید و این فایل را با نام index.html در ریشه‌ی آن آپلود کنید.
+  ۲) به Settings ← Pages بروید، Source را روی Deploy from a branch و شاخه‌ی main و پوشه‌ی /(root) بگذارید.
+  ۳) بعد از یکی دو دقیقه بازی در آدرس https://USERNAME.github.io/REPO/ در دسترس است.
+  Netlify: فایل را در netlify.com/drop رها کنید. Vercel: پوشه‌ی حاوی این فایل را import کنید (بدون build).
+-->
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dozchi | بازی دوز در برابر ربات شکست‌ناپذیر</title>
+<meta name="description" content="Dozchi، بازی دوز (Tic-Tac-Toe) آنلاین و رایگان: انسان در برابر ربات شکست‌ناپذیر، ربات در برابر ربات و دو نفره. طراحی نئونی و ریسپانسیو.">
+<meta name="theme-color" content="#0d0b24">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230d0b24'/%3E%3Cpath d='M22 22L56 56M56 22L22 56' stroke='%232ee6d6' stroke-width='9' stroke-linecap='round'/%3E%3Ccircle cx='68' cy='68' r='16' fill='none' stroke='%23ff4fa3' stroke-width='9'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0b24; --violet:#5a32c8; --teal:#2ee6d6; --pink:#ff4fa3;
+  --text:#eae8ff; --muted:#a9a4d6; --glass:rgba(255,255,255,.06); --line:rgba(255,255,255,.13);
+}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{min-height:100dvh}
+body{
+  font-family:'Vazirmatn',Tahoma,system-ui,sans-serif; color:var(--text); background:var(--bg);
+  background-image:
+    radial-gradient(60vmax 60vmax at 90% -10%,rgba(90,50,200,.55),transparent 60%),
+    radial-gradient(50vmax 50vmax at -10% 110%,rgba(255,79,163,.28),transparent 60%),
+    radial-gradient(40vmax 40vmax at 50% 50%,rgba(46,230,214,.08),transparent 70%);
+  padding:max(18px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));
+  display:flex;justify-content:center;touch-action:manipulation;-webkit-user-select:none;user-select:none;
+}
+.app{width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:clamp(1.9rem,8vw,2.4rem);font-weight:800;text-align:center;line-height:1.3;
+  background:linear-gradient(90deg,var(--teal),#8f7bff 50%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.glass{background:var(--glass);border:1px solid var(--line);border-radius:20px;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+
+/* انتخاب حالت بازی */
+.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:6px}
+.modes button{padding:10px 4px;border-radius:14px;font-size:.85rem;font-weight:600;color:var(--muted);transition:.2s}
+.modes button[aria-pressed=true]{color:#fff;background:linear-gradient(135deg,var(--violet),#7d4dff);box-shadow:0 4px 18px rgba(125,77,255,.5)}
+
+/* انتخاب نماد */
+.picker{display:flex;align-items:center;justify-content:center;gap:12px;font-size:.9rem;color:var(--muted)}
+.picker[hidden],.hint[hidden]{display:none}
+.picker,.hint{min-height:52px}
+.hint{display:flex;align-items:center;justify-content:center;text-align:center;font-size:.9rem;color:var(--muted)}
+.picker button{width:52px;height:52px;border-radius:16px;padding:9px;border:1px solid var(--line);background:var(--glass);transition:.2s}
+.picker button[aria-pressed=true]{border-color:var(--teal);box-shadow:0 0 0 3px rgba(46,230,214,.25),0 0 22px rgba(46,230,214,.3)}
+
+/* تخته امتیاز */
+.score{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.score>div{padding:10px 6px;text-align:center;border-radius:16px;transition:border-color .25s,box-shadow .25s}
+.score>:first-child{--c:var(--teal)} .score>:last-child{--c:var(--pink)}
+.score>.active{border-color:var(--c);box-shadow:0 0 24px -4px var(--c),0 10px 40px rgba(0,0,0,.35)}
+.score svg,.picker svg{width:30px;height:30px;display:block;margin:0 auto 2px}
+.picker svg{width:100%;height:100%}
+.score small{display:block;font-size:.75rem;color:var(--muted)}
+.score b{font-size:1.5rem;font-weight:800;display:inline-block}
+.score .eq{font-size:1.6rem;line-height:30px;height:30px;color:var(--muted);font-weight:800}
+
+/* پیام وضعیت */
+#status{text-align:center;font-weight:600;min-height:1.8em;font-size:1.05rem}
+#status.win{color:var(--teal)} #status.lose{color:var(--pink)}
+
+/* تخته بازی */
+.board{direction:ltr;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:10px;padding:12px;aspect-ratio:1;width:100%;position:relative}
+.cell{border-radius:18px;background:rgba(255,255,255,.05);border:1px solid var(--line);padding:16%;
+  transition:transform .15s,background .2s,box-shadow .2s,opacity .3s;position:relative}
+@media (hover:hover){.cell:not(:disabled):hover{background:rgba(46,230,214,.1);box-shadow:inset 0 0 22px rgba(46,230,214,.25);transform:scale(1.04)}}
+.cell:not(:disabled):active{transform:scale(.95)}
+.cell:disabled{cursor:default}
+.cell svg{width:100%;height:100%;display:block;overflow:visible}
+.mk{fill:none;stroke-width:11;stroke-linecap:round;stroke-dasharray:100}
+.mk.x{stroke:url(#gx);filter:drop-shadow(0 0 6px rgba(46,230,214,.75))}
+.mk.o{stroke:url(#go);filter:drop-shadow(0 0 6px rgba(255,79,163,.75))}
+.cell.placed{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+.cell.placed .mk{animation:draw .35s ease-out}
+.board.done .cell:not(.win){opacity:.4}
+.cell.win{animation:glow 1s ease-in-out infinite alternate;border-color:var(--c);background:rgba(255,255,255,.1)}
+.cell.win.wx{--c:var(--teal)} .cell.win.wo{--c:var(--pink)}
+@keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}
+@keyframes draw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@keyframes glow{from{box-shadow:0 0 8px var(--c),inset 0 0 8px var(--c)}to{box-shadow:0 0 28px var(--c),inset 0 0 22px var(--c)}}
+
+.strike{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.strike line{stroke-width:7;stroke-linecap:round;stroke-dasharray:1;animation:strike .5s .1s ease-out backwards}
+.strike.X line{stroke:var(--teal);filter:drop-shadow(0 0 8px var(--teal))} .strike.O line{stroke:var(--pink);filter:drop-shadow(0 0 8px var(--pink))}
+@keyframes strike{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+
+/* انیمیشن برد */
+#fx{position:fixed;inset:0;z-index:50;overflow:hidden;cursor:pointer;touch-action:none;transition:opacity .35s;
+  background:radial-gradient(circle at 50% 50%,rgba(8,6,28,.15),rgba(8,6,28,.55));animation:fxin .2s ease-out}
+#fx.out{opacity:0;pointer-events:none}
+#fxc{position:absolute;inset:0;width:100%;height:100%}
+.fxflash,.fxring{position:absolute;left:50%;top:50%;translate:-50% -50%;border-radius:50%;pointer-events:none}
+.fxflash{width:260px;height:260px;background:radial-gradient(circle,#fff,var(--fx) 35%,transparent 70%);animation:fxflash .6s ease-out forwards}
+.fxring{width:60px;height:60px;opacity:0;border:3px solid var(--fx);box-shadow:0 0 24px var(--fx),inset 0 0 24px var(--fx);animation:fxring .8s cubic-bezier(.1,.7,.3,1) forwards}
+.fxring.r2{animation-delay:.12s;border-width:2px}
+.fxnum{position:fixed;left:0;top:0;opacity:0;font-size:clamp(6rem,30vmin,13rem);font-weight:800;line-height:1;color:var(--fxl);
+  text-shadow:0 0 18px var(--fx),0 0 50px var(--fx),0 0 90px var(--fx);will-change:transform}
+.score>.bump{animation:hit .6s ease-out}
+.score b.bump{animation:bumpn .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes fxin{from{opacity:0}}
+@keyframes fxflash{from{transform:scale(.1);opacity:1}to{transform:scale(3.2);opacity:0}}
+@keyframes fxring{from{transform:scale(.3);opacity:1}to{transform:scale(16);opacity:0}}
+@keyframes hit{from{box-shadow:0 0 0 0 var(--hit),0 0 30px var(--hit)}to{box-shadow:0 0 0 18px transparent,0 0 0 transparent}}
+@keyframes bumpn{0%{transform:scale(1)}40%{transform:scale(1.7);text-shadow:0 0 16px var(--hit)}100%{transform:scale(1)}}
+
+/* دکمه‌ها */
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions button{flex:1 1 90px;padding:12px 4px;border-radius:14px;font-weight:600;font-size:.85rem;white-space:nowrap;border:1px solid var(--line);background:var(--glass);transition:.2s}
+.actions button:hover{background:rgba(255,255,255,.12)}
+.actions .primary{background:linear-gradient(135deg,var(--teal),#4f8cff);color:#07122b;border:0;box-shadow:0 6px 22px rgba(46,230,214,.35)}
+.actions .primary:hover{background:linear-gradient(135deg,var(--teal),#4f8cff);filter:brightness(1.1)}
+.actions [hidden]{display:none}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.cell.win{box-shadow:0 0 22px var(--c)}}
+</style>
+</head>
+<body>
+<!-- گرادیان‌های نمادها -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gx" gradientUnits="userSpaceOnUse" x1="20" y1="20" x2="80" y2="80"><stop offset="0" stop-color="#2ee6d6"/><stop offset="1" stop-color="#5b8cff"/></linearGradient>
+  <linearGradient id="go" gradientUnits="userSpaceOnUse" x1="20" y1="20" x2="80" y2="80"><stop offset="0" stop-color="#ff4fa3"/><stop offset="1" stop-color="#ffa65c"/></linearGradient>
+</defs></svg>
+
+<main class="app">
+  <h1>دوزچی</h1>
+  <div class="modes glass" role="group" aria-label="حالت بازی">
+    <button data-mode="hvb" aria-pressed="true">انسان ← ربات</button>
+    <button data-mode="bvh" aria-pressed="false">ربات ← انسان</button>
+    <button data-mode="bvb" aria-pressed="false">ربات ← ربات</button>
+    <button data-mode="hvh" aria-pressed="false">دو نفره</button>
+  </div>
+  <p class="hint" id="hint"></p>
+  <div class="picker" id="picker"><span>نماد شما:</span>
+    <button data-sym="X" aria-label="بازی با X"></button><button data-sym="O" aria-label="بازی با O"></button>
+  </div>
+  <div class="score">
+    <div class="glass"><span class="ic" data-ic="X"></span><small id="lx"></small><b id="sx">0</b></div>
+    <div class="glass"><div class="eq">=</div><small>مساوی</small><b id="sd">0</b></div>
+    <div class="glass"><span class="ic" data-ic="O"></span><small id="lo"></small><b id="so">0</b></div>
+  </div>
+  <p id="status" aria-live="polite"></p>
+  <div class="board glass" id="board" role="group" aria-label="تخته بازی"></div>
+  <div class="actions">
+    <button class="primary" id="newBtn">بازی جدید</button>
+    <button id="pauseBtn" hidden>توقف</button>
+    <button id="resetBtn">صفر کردن امتیاز</button>
+  </div>
+</main>
+
+<div id="fx" hidden aria-hidden="true">
+  <canvas id="fxc"></canvas><i class="fxflash"></i><i class="fxring"></i><i class="fxring r2"></i><div id="fxn" class="fxnum"></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ========== داده‌ها و منطق بازی ========== */
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const MARK = {
+  X: '<svg viewBox="0 0 100 100" aria-hidden="true"><path class="mk x" pathLength="100" d="M26 26L74 74M74 26L26 74"/></svg>',
+  O: '<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="mk o" pathLength="100" cx="50" cy="50" r="25"/></svg>'
+};
+const HINTS = { bvh:'ربات اول شروع می‌کند (X) و شما با O ادامه می‌دهید', bvb:'تماشای بازی دو ربات؛ هر دور خودکار شروع می‌شود', hvh:'دو بازیکن به نوبت روی همین دستگاه بازی می‌کنند' };
+let lastPick = 'X';   // نمادی که کاربر در حالت انسان←ربات انتخاب کرده
+const state = { mode:'hvb', human:'X', board:Array(9).fill(null), turn:'X',
+  over:false, paused:false, thinking:false, result:undefined, line:[], scores:{X:0,O:0,D:0}, gen:0 };
+const fa = n => n.toLocaleString('fa-IR');
+const other = s => s === 'X' ? 'O' : 'X';
+
+function winner(b){
+  for (const l of LINES) if (b[l[0]] && b[l[0]] === b[l[1]] && b[l[0]] === b[l[2]]) return { sym:b[l[0]], line:l };
+  return null;
+}
+
+/* ========== هوش مصنوعی: Minimax + هرس آلفا-بتا ========== */
+function minimax(b, turn, me, alpha, beta, depth){
+  const w = winner(b);
+  if (w) return w.sym === me ? 10 - depth : depth - 10;   // برد سریع‌تر ارزش بیشتر
+  if (b.every(Boolean)) return 0;
+  const maxing = turn === me;
+  let best = maxing ? -Infinity : Infinity;
+  for (let i = 0; i < 9; i++){
+    if (b[i]) continue;
+    b[i] = turn;
+    const s = minimax(b, other(turn), me, alpha, beta, depth + 1);
+    b[i] = null;
+    if (maxing){ best = Math.max(best, s); alpha = Math.max(alpha, best); }
+    else       { best = Math.min(best, s); beta  = Math.min(beta, best); }
+    if (beta <= alpha) break;
+  }
+  return best;
+}
+// بهترین حرکت؛ بین حرکت‌های هم‌ارزش تصادفی انتخاب می‌شود
+function botMove(b, me){
+  if (b.every(v => !v)){ const pool = Math.random() < .7 ? [6,8] : [0,2]; return pool[Math.floor(Math.random() * 2)]; }   // بهترین شروع: گوشه؛ گوشه‌های پایین ۷۰٪ و بالا ۳۰٪
+  const c = b.slice(); let best = -Infinity, moves = [];
+  for (let i = 0; i < 9; i++){
+    if (c[i]) continue;
+    c[i] = me;
+    const s = minimax(c, other(me), me, -Infinity, Infinity, 1);
+    c[i] = null;
+    if (s > best){ best = s; moves = [i]; } else if (s === best) moves.push(i);
+  }
+  return moves[Math.floor(Math.random() * moves.length)];
+}
+
+/* ========== جریان بازی ========== */
+const vsBot = () => state.mode === 'hvb' || state.mode === 'bvh';   // انسان در برابر ربات (ربات‌اول یا انسان‌اول)
+const isBotTurn = () => state.mode === 'bvb' || (vsBot() && state.turn !== state.human);
+
+function newRound(){
+  state.gen++;
+  Object.assign(state, { board:Array(9).fill(null), turn: state.mode === 'hvb' ? state.human : state.mode === 'bvh' ? other(state.human) : 'X', over:false, thinking:false, result:undefined, line:[] });
+  render(); next();
+}
+function next(){
+  if (state.over || (state.mode === 'bvb' && state.paused)) return render();
+  if (isBotTurn()){
+    const g = state.gen; state.thinking = true; render();
+    setTimeout(() => {
+      if (g !== state.gen || state.over) return;
+      state.thinking = false;
+      play(botMove(state.board, state.turn));
+    }, 300 + Math.random() * 100);
+  } else render();
+}
+function play(i){
+  state.board[i] = state.turn;
+  const w = winner(state.board);
+  if (w) finish(w.sym, w.line);
+  else if (state.board.every(Boolean)) finish(null, []);
+  else { state.turn = other(state.turn); next(); return; }
+  render();
+}
+function finish(sym, line){
+  state.over = true; state.result = sym; state.line = line;
+  if (sym) return celebrate(sym);        // امتیاز برنده بعد از انیمیشن (یا با Skip) دقیقاً یک بار ثبت می‌شود
+  state.scores.D++; afterRound(1400);
+}
+
+/* ========== رندر ========== */
+const $ = s => document.querySelector(s);
+const boardEl = $('#board');
+const cells = Array.from({length:9}, (_, i) => {
+  const c = document.createElement('button');
+  c.className = 'cell';
+  c.addEventListener('click', () => {
+    if (state.over || isBotTurn() || state.board[i]) return;
+    play(i);
+  });
+  boardEl.appendChild(c); return c;
+});
+
+function who(sym){ // نام نمایشی هر نماد برای تخته امتیاز
+  if (vsBot()) return sym === state.human ? 'شما' : 'ربات';
+  return state.mode === 'bvb' ? 'ربات' : 'بازیکن';
+}
+function statusText(){
+  const { mode, human, turn, result, over } = state;
+  if (over){
+    if (!result) return ['مساوی شد', ''];
+    if (vsBot()) return result === human ? ['شما بردید! 🎉', 'win'] : ['ربات برد', 'lose'];
+    return [(mode === 'bvb' ? 'ربات ' : 'بازیکن ') + result + ' برد!', 'win'];
+  }
+  if (vsBot()) return [state.thinking ? 'ربات در حال فکر کردن…' : 'نوبت شماست (' + human + ')', ''];
+  if (mode === 'hvh') return ['نوبت بازیکن ' + turn, ''];
+  return [state.paused ? 'بازی متوقف شد' : 'ربات ' + turn + ' در حال بازی…', ''];
+}
+function drawStrike(force){   // خط برنده‌ی متحرک روی تخته
+  let el = boardEl.querySelector('.strike');
+  if (el && (force || !state.line.length)){ el.remove(); el = null; }
+  if (el || !state.line.length) return;
+  const B = boardEl.getBoundingClientRect(), L = state.line;
+  const pt = i => { const r = cells[i].getBoundingClientRect(); return [r.left - B.left + r.width / 2, r.top - B.top + r.height / 2]; };
+  const [x1, y1] = pt(L[0]), [x2, y2] = pt(L[2]);
+  boardEl.insertAdjacentHTML('beforeend', `<svg class="strike ${state.board[L[0]]}" viewBox="0 0 ${B.width} ${B.height}" aria-hidden="true"><line pathLength="1" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/></svg>`);
+}
+function render(){
+  cells.forEach((c, i) => {
+    const v = state.board[i];
+    if (c.dataset.v !== (v || '')){
+      c.dataset.v = v || ''; c.innerHTML = v ? MARK[v] : '';
+      c.classList.remove('placed'); void c.offsetWidth;   // ری‌استارت انیمیشن
+      if (v) c.classList.add('placed');
+    }
+    c.setAttribute('aria-label', 'خانه ' + fa(i + 1) + (v ? ': ' + v : ': خالی'));
+    c.disabled = !!state.fx || state.over || !!v || isBotTurn();
+    c.classList.toggle('win', state.line.includes(i));
+    c.classList.toggle('wx', state.line.includes(i) && v === 'X');
+    c.classList.toggle('wo', state.line.includes(i) && v === 'O');
+  });
+  boardEl.classList.toggle('done', state.over && state.line.length > 0);
+  const [msg, cls] = statusText();
+  $('#status').textContent = msg; $('#status').className = cls;
+  $('#sx').textContent = fa(state.scores.X); $('#so').textContent = fa(state.scores.O); $('#sd').textContent = fa(state.scores.D);
+  const sc = document.querySelectorAll('.score>div');
+  sc[0].classList.toggle('active', !state.over && state.turn === 'X'); sc[2].classList.toggle('active', !state.over && state.turn === 'O');
+  drawStrike();
+  $('#lx').textContent = who('X'); $('#lo').textContent = who('O');
+  $('#pauseBtn').hidden = state.mode !== 'bvb';
+  $('#pauseBtn').textContent = state.paused ? 'ادامه' : 'توقف';
+  $('#picker').hidden = state.mode !== 'hvb'; $('#hint').hidden = state.mode === 'hvb'; $('#hint').textContent = HINTS[state.mode] || '';
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === state.mode));
+  document.querySelectorAll('[data-sym]').forEach(b => b.setAttribute('aria-pressed', b.dataset.sym === state.human));
+}
+
+/* ========== انیمیشن برد ========== */
+const fxEl = $('#fx'), cv = $('#fxc'), ctx = cv.getContext('2d'), num = $('#fxn');
+const FX = { X:{c:'#3d8bff', l:'#a9ccff'}, O:{c:'#ff3b4f', l:'#ffb0b7'} };
+const reduceMotion = matchMedia('(prefers-reduced-motion:reduce)');
+const clamp = v => Math.min(1, Math.max(0, v));
+const spriteOf = col => { const s = document.createElement('canvas'); s.width = s.height = 64;
+  const g = s.getContext('2d'), r = g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,'#fff'); r.addColorStop(.3,col); r.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle = r; g.fillRect(0,0,64,64); return s; };
+let fxRaf = 0;
+
+function afterRound(delay){            // حالت ربات-ربات: دور بعد خودکار شروع می‌شود
+  if (state.mode !== 'bvb' || state.paused) return;
+  const g = state.gen;
+  setTimeout(() => { if (g === state.gen && !state.paused) newRound(); }, delay);
+}
+function bump(sym){
+  const b = $(sym === 'X' ? '#sx' : '#so'), card = b.parentElement;
+  card.style.setProperty('--hit', FX[sym].c);
+  [b, card].forEach(e => { e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); });
+}
+function commit(){                     // ثبت امتیاز؛ با state.fx=null فقط یک بار اجرا می‌شود
+  const f = state.fx; if (!f) return;
+  state.fx = null; state.scores[f.sym]++; render(); bump(f.sym); afterRound(0);
+}
+function teardown(){
+  cancelAnimationFrame(fxRaf); fxEl.hidden = true; fxEl.classList.remove('out');
+  num.style.opacity = 0; ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height);
+}
+function skipFx(){ commit(); teardown(); }
+
+function celebrate(sym){
+  if (reduceMotion.matches){ state.scores[sym]++; afterRound(1400); return; }
+  teardown();
+  const col = FX[sym], dpr = Math.min(devicePixelRatio || 1, 1.5);
+  let W = innerWidth, H = innerHeight; cv.width = W * dpr; cv.height = H * dpr;
+  fxEl.style.setProperty('--fx', col.c); fxEl.style.setProperty('--fxl', col.l); fxEl.hidden = false;
+  num.textContent = fa(1); const numH = num.offsetHeight || 150;
+  const sp = [spriteOf(col.c), spriteOf(col.l)], k = Math.min(W, H) / 700 + .4;
+  const P = Array.from({length: W < 600 ? 60 : 90}, () => { const a = Math.random() * 6.283, v = (220 + Math.random() * 700) * k;
+    return { x:0, y:0, vx:Math.cos(a) * v, vy:Math.sin(a) * v, s:14 + Math.random() * 34, l:Math.random() < .35 ? 1 : 0 }; });
+  state.fx = { sym };                  // تا پایان انیمیشن ورودی بازی بسته است
+  let t0 = 0, last = 0;
+  const step = now => {
+    if (!t0) t0 = last = now;
+    const t = now - t0, dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (innerWidth !== W || innerHeight !== H){ W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; }
+    const cx = W / 2, cy = H / 2, gp = clamp((t - 450) / 450), e = gp * gp, th = gp * 1.4;
+    const cs = Math.cos(th), sn = Math.sin(th), drag = Math.exp(-3 * dt), fade = 1 - clamp((t - 820) / 160);
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H); ctx.globalCompositeOperation = 'lighter';
+    if (fade > 0){
+      for (const p of P){                // انفجار ← جمع‌شدن مارپیچ به مرکز
+        p.vx *= drag; p.vy *= drag; p.x += p.vx * dt; p.y += p.vy * dt;
+        const x = (p.x * cs - p.y * sn) * (1 - e), y = (p.x * sn + p.y * cs) * (1 - e), z = p.s * k * (1 - .6 * e);
+        ctx.globalAlpha = fade * (.55 + .45 * Math.random()); ctx.drawImage(sp[p.l], cx + x - z / 2, cy + y - z / 2, z, z);
+      }
+      if (gp > 0){ const z = (60 + 260 * e) * k; ctx.globalAlpha = e * fade; ctx.drawImage(sp[0], cx - z / 2, cy - z / 2, z, z); }
+    }
+    let s = 0, x = cx, y = cy, o = 0;    // عدد ۱: ظاهر شدن در مرکز، سپس پرواز به نمایشگر امتیاز
+    if (t >= 800 && t < 1000){ const q = clamp((t - 800) / 200); s = q * (1 + .15 * Math.sin(q * Math.PI)); o = clamp((t - 800) / 100); }
+    else if (t >= 1000 && t < 1450){
+      const q = clamp((t - 1000) / 450), m = q < .5 ? 4 * q ** 3 : 1 - (-2 * q + 2) ** 3 / 2;
+      const r = $(sym === 'X' ? '#sx' : '#so').getBoundingClientRect();   // مقصد در هر فریم دوباره محاسبه می‌شود
+      s = 1 + (r.height / numH * .9 - 1) * m; x = cx + (r.left + r.width / 2 - cx) * m; y = cy + (r.top + r.height / 2 - cy) * m; o = 1;
+    }
+    num.style.opacity = o; num.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%) scale(${s})`;
+    if (t >= 1450 && state.fx){ commit(); fxEl.classList.add('out'); }
+    if (t >= 1800) return teardown();
+    fxRaf = requestAnimationFrame(step);
+  };
+  fxRaf = requestAnimationFrame(step);
+}
+// کلیک/لمس/کلید در حین انیمیشن: فقط Skip (هیچ ورودی دیگری به بازی نمی‌رسد)
+addEventListener('click', e => { if (!state.fx) return; e.preventDefault(); e.stopPropagation(); skipFx(); }, true);
+let swallow = false;
+addEventListener('keydown', e => {
+  if (!state.fx || !['Enter',' ','Escape'].includes(e.key)) return;
+  e.preventDefault(); swallow = e.key === ' '; skipFx();
+}, true);
+addEventListener('keyup', e => { if (swallow && e.key === ' '){ swallow = false; e.preventDefault(); } }, true);
+
+/* ========== رویدادها ========== */
+document.querySelectorAll('.ic').forEach(e => e.innerHTML = MARK[e.dataset.ic]);
+document.querySelectorAll('[data-sym]').forEach(b => { b.innerHTML = MARK[b.dataset.sym]; });
+document.querySelectorAll('.mk').forEach(m => m.style.animation = 'none');   // نمادهای ثابت بدون انیمیشن
+
+const resetScores = () => { state.scores = {X:0,O:0,D:0}; };
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.mode === state.mode) return;   // کلیک روی حالت فعلی امتیاز را پاک نکند
+  state.mode = b.dataset.mode; state.paused = false;
+  if (state.mode === 'bvh') state.human = 'O';        // ربات با X شروع می‌کند
+  else if (state.mode === 'hvb') state.human = lastPick; resetScores(); newRound();
+}));
+document.querySelectorAll('[data-sym]').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.sym === state.human) return;
+  state.human = lastPick = b.dataset.sym; resetScores(); newRound();   // در حالت انسان←ربات همیشه انسان اول بازی می‌کند
+}));
+$('#newBtn').addEventListener('click', () => { state.paused = false; newRound(); });
+$('#resetBtn').addEventListener('click', () => { resetScores(); render(); });
+$('#pauseBtn').addEventListener('click', () => {
+  state.paused = !state.paused; state.gen++; state.thinking = false;   // لغو تایمرهای در انتظار
+  if (state.paused) render();
+  else if (state.over) newRound();
+  else next();
+});
+
+addEventListener('resize', () => drawStrike(true));
+newRound();
+})();
+</script>
+</body>
+</html>
